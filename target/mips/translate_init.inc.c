@@ -884,6 +884,8 @@ const mips_def_t mips_defs[] =
         .CP1_fcr31_rw_bitmask = 0xFF83FFFF,
         .SEGBITS = 48,
         .PABITS = 48,
+        /* FIXME: 3A4000 should support more vendor ASE but for TCG we treat it
+                  as same as 3A1000 for now  */
         .insn_flags = CPU_LOONGSON3A,
         .mmu_type = MMU_TYPE_R4000,
     },
