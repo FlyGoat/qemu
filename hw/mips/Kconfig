@@ -50,3 +50,7 @@ config MIPS_CPS
 
 config MIPS_BOSTON
     bool
+
+config LOONGSON_VIRT
+    bool
+    select PCI_EXPRESS_GENERIC_BRIDGE
