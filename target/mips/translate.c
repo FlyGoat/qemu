@@ -30086,10 +30086,10 @@ static void decode_opc(CPUMIPSState *env, DisasContext *ctx)
         break;
     case OPC_SPECIAL2:
 #if defined(TARGET_MIPS64)
-        if ((ctx->insn_flags & INSN_R5900) && (ctx->insn_flags & ASE_MMI)) {
+        if ((ctx->insn_flags & INSN_R5900) && (ctx->insn_flags & ASE_TX79_MMI)) {
             decode_mmi(env, ctx);
 #else
-        if (ctx->insn_flags & ASE_MXU) {
+        if (ctx->insn_flags & ASE_INGENIC_MXU) {
             decode_opc_mxu(env, ctx);
 #endif
         } else {
