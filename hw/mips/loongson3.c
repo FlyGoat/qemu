@@ -824,6 +824,13 @@ static void mips_loongson3_init(MachineState *machine)
         exit(1);
     }
 
+    /*
+     * The whole MMIO range among configure registers doesn't generate
+     * exception when accessing invalid memory. Create an empty slot to
+     * emulate this feature.
+     */
+    empty_slot_init(0, 0x80000000);
+
     for (i = 0; i < machine->smp.cpus; i++) {
         /* init CPUs */
         cpu = MIPS_CPU(cpu_create(machine->cpu_type));
@@ -832,15 +839,16 @@ static void mips_loongson3_init(MachineState *machine)
         cpu_mips_irq_init_cpu(cpu);
         cpu_mips_clock_init(cpu);
         qemu_register_reset(main_cpu_reset, cpu);
+
+        if (!kvm_enabled()) {
+            DeviceState *dev;
+            dev = qdev_create(NULL, "loongson.smp-ipi");
+            qdev_init_nofail(dev);
+            sysbus_mmio_map(SYS_BUS_DEVICE(dev), 0, 0x3ff01000 + 0x100 * i);
+            sysbus_connect_irq(SYS_BUS_DEVICE(dev), 0, cpu->env.irq[6]);
+        }
     }
     env = &MIPS_CPU(first_cpu)->env;
-
-    /*
-     * The whole MMIO range among configure registers doesn't generate
-     * exception when accessing invalid memory. Create an empty slot to
-     * emulate this feature.
-     */
-    empty_slot_init(0, 0x80000000);
 
     /* Allocate RAM/BIOS, 0x00000000~0x10000000 is alias of 0x80000000~0x90000000 */
     memory_region_init_rom(bios, NULL, "loongson3.bios",
