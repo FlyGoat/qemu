@@ -421,10 +421,18 @@ static struct efi_cpuinfo_loongson *init_cpu_info(void *g_cpuinfo_loongson)
     struct efi_cpuinfo_loongson *c = g_cpuinfo_loongson;
 
     c->cputype  = Loongson_3A;
-    c->processor_id = 0x14C000;
-    c->cpu_clock_freq = get_host_cpu_freq();
-    if (!c->cpu_clock_freq) {
-        c->cpu_clock_freq = 500000000;
+    c->processor_id = MIPS_CPU(first_cpu)->env.CP0_PRid;
+    if (kvm_enabled()) {
+        c->cpu_clock_freq = get_host_cpu_freq();
+        if (!c->cpu_clock_freq) {
+            c->cpu_clock_freq = 500000000;
+        }
+    } else {
+        /*
+         * TCG has a default CP0 Timer period 10 ns, which is 100MHz,
+         * CPU frequency is defined as double of CP0 timer frequency.
+         */
+        c->cpu_clock_freq = 200000000;
     }
 
     c->cpu_startup_core_id = 0;
