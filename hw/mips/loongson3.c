@@ -23,6 +23,7 @@
 #include "hw/char/serial.h"
 #include "hw/mips/mips.h"
 #include "hw/mips/cpudevs.h"
+#include "hw/empty_slot.h"
 #include "hw/intc/i8259.h"
 #include "hw/loader.h"
 #include "hw/ide.h"
@@ -833,6 +834,13 @@ static void mips_loongson3_init(MachineState *machine)
         qemu_register_reset(main_cpu_reset, cpu);
     }
     env = &MIPS_CPU(first_cpu)->env;
+
+    /*
+     * The whole MMIO range among configure registers doesn't generate
+     * exception when accessing invalid memory. Create an empty slot to
+     * emulate this feature.
+     */
+    empty_slot_init(0, 0x80000000);
 
     /* Allocate RAM/BIOS, 0x00000000~0x10000000 is alias of 0x80000000~0x90000000 */
     memory_region_init_rom(bios, NULL, "loongson3.bios",
