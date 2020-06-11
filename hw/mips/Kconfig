@@ -45,7 +45,7 @@ config FULOONG
     bool
     select PCI_BONITO
 
-config LOONGSON3
+config LOONGSON3_VIRT
     bool
     select PCKBD
     select SERIAL
