@@ -23,7 +23,7 @@
 #include "hw/mips/mips.h"
 #include "hw/mips/cpudevs.h"
 #include "hw/mips/loongson3-virt.h"
-#include "hw/empty_slot.h"
+#include "hw/misc/empty_slot.h"
 #include "hw/intc/i8259.h"
 #include "hw/loader.h"
 #include "hw/isa/superio.h"
@@ -619,7 +619,7 @@ static void mips_loongson3_init(MachineState *machine)
      * exception when accessing invalid memory. Create an empty slot to
      * emulate this feature.
      */
-    empty_slot_init(0, 0x80000000);
+    empty_slot_init("Fallback", 0, 0x80000000);
 
     for (i = 0; i < machine->smp.cpus; i++) {
         /* init CPUs */
@@ -707,7 +707,6 @@ static void mips_loongson3_machine_init(MachineClass *mc)
     mc->max_cpus = LOONGSON_MAX_VCPUS;
     mc->default_ram_id = "loongson3.highram";
     mc->default_ram_size = 1200 * MiB;
-    mc->kvm_type = mips_kvm_type;
     mc->minimum_page_bits = 14;
 }
 
