@@ -33,6 +33,7 @@ enum {
     VIRT_PCIE_ECAM,
     VIRT_BIOS_ROM,
     VIRT_UART,
+//    VIRT_LIOINTC,
     VIRT_PCIE_MMIO,
     VIRT_HIGHMEM
 };

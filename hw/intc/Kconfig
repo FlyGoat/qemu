@@ -64,3 +64,6 @@ config OMPIC
 
 config LOONGSON_IPI
     bool
+
+config LOONGSON_LIOINTC
+    bool

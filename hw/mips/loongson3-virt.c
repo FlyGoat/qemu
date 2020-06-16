@@ -50,7 +50,7 @@
 
 #define LOONGSON3_BIOSNAME "bios_loongson3.bin"
 
-#define PCIE_IRQ_BASE       3
+#define PCIE_IRQ_BASE       0
 
 #define align(x) (((x) + 63) & ~63)
 
@@ -499,6 +499,7 @@ static void main_cpu_reset(void *opaque)
     }
 }
 
+#if 0
 static void loongson3_isa_init(qemu_irq intc)
 {
     qemu_irq *i8259;
@@ -514,6 +515,7 @@ static void loongson3_isa_init(qemu_irq intc)
     isa_create_simple(isa_bus, "i8042");
     mc146818_rtc_init(isa_bus, 2000, NULL);
 }
+#endif
 
 static inline void loongson3_pcie_init(MachineState *machine, DeviceState *pic)
 {
@@ -525,6 +527,7 @@ static inline void loongson3_pcie_init(MachineState *machine, DeviceState *pic)
     MemoryRegion *pio_alias;
     MemoryRegion *mmio_alias, *mmio_reg;
     MemoryRegion *ecam_alias, *ecam_reg;
+
 
     dev = qdev_create(NULL, TYPE_GPEX_HOST);
 
@@ -558,7 +561,7 @@ static inline void loongson3_pcie_init(MachineState *machine, DeviceState *pic)
 
     pci_create_simple(pci_bus, -1, "pci-ohci");
     
-    if (!pci_vga_init(pci_bus)) {
+    if (pci_vga_init(pci_bus)) {
         usb_bus = usb_bus_find(-1);
         usb_create_simple(usb_bus, "usb-kbd");
         usb_create_simple(usb_bus, "usb-tablet");
@@ -581,6 +584,7 @@ static void mips_loongson3_init(MachineState *machine)
     long bios_size;
     MIPSCPU *cpu;
     CPUMIPSState *env;
+    DeviceState *liointc;
     char *filename;
     const char *kernel_cmdline = machine->kernel_cmdline;
     const char *kernel_filename = machine->kernel_filename;
@@ -620,8 +624,14 @@ static void mips_loongson3_init(MachineState *machine)
      * emulate this feature.
      */
     empty_slot_init("Fallback", 0, 0x80000000);
+    
+    liointc = qdev_create(NULL, "loongson.liointc");
+    qdev_init_nofail(liointc);
+
+    sysbus_mmio_map(SYS_BUS_DEVICE(liointc), 0, 0x3ff01400);
 
     for (i = 0; i < machine->smp.cpus; i++) {
+        int ip;
         /* init CPUs */
         cpu = MIPS_CPU(cpu_create(machine->cpu_type));
 
@@ -629,6 +639,13 @@ static void mips_loongson3_init(MachineState *machine)
         cpu_mips_irq_init_cpu(cpu);
         cpu_mips_clock_init(cpu);
         qemu_register_reset(main_cpu_reset, cpu);
+
+        for (ip = 0; ip < 4 ; ip++) {
+            int pin;
+            pin = i * 4 + ip;
+            sysbus_connect_irq(SYS_BUS_DEVICE(liointc),
+                                pin, cpu->env.irq[ip + 2]);
+        }
 
         if (!kvm_enabled()) {
             DeviceState *dev;
@@ -652,6 +669,7 @@ static void mips_loongson3_init(MachineState *machine)
     memory_region_add_subregion(address_space_mem, virt_memmap[VIRT_BIOS_ROM].base, bios);
     memory_region_add_subregion(address_space_mem, virt_memmap[VIRT_HIGHMEM].base, machine->ram);
     memory_region_add_subregion(address_space_mem, virt_memmap[VIRT_PM].base, iomem);
+
 
     /*
      * We do not support flash operation, just loading pmon.bin as raw BIOS.
@@ -690,8 +708,7 @@ static void mips_loongson3_init(MachineState *machine)
 
     fw_conf_init(ram_size);
 
-    loongson3_isa_init(env->irq[3]);
-    loongson3_pcie_init(machine, isa_pic);
+    loongson3_pcie_init(machine, liointc);
 
     if (serial_hd(0)) {
         serial_mm_init(address_space_mem, virt_memmap[VIRT_UART].base, 0, env->irq[2],

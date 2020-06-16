@@ -49,9 +49,9 @@ config LOONGSON3_VIRT
     bool
     select PCKBD
     select SERIAL
-    select ISA_BUS
     select PCI_EXPRESS_GENERIC_BRIDGE
     select LOONGSON_IPI
+    select LOONGSON_LIOINTC
     select VIRTIO_VGA
     select QXL if SPICE
     select MSI_NONBROKEN
