@@ -372,38 +372,46 @@ static struct efi_memory_map_loongson *init_memory_map(void *g_map)
 
 static uint32_t get_cpu_freq(void)
 {
-    int fd = 0, freq = 0;
-    char buf[BUFLEN], *buf_p;
+    if (kvm_enabled()) {
+        int fd = 0, freq = 0;
+        char buf[BUFLEN], *buf_p;
 
-    fd = open("/proc/cpuinfo", O_RDONLY);
-    if (fd == -1) {
-        fprintf(stderr, "Failed to open /proc/cpuinfo!\n");
-        return 0;
-    }
+        fd = open("/proc/cpuinfo", O_RDONLY);
+        if (fd == -1) {
+            fprintf(stderr, "Failed to open /proc/cpuinfo!\n");
+            return 0;
+        }
 
-    if (read(fd, buf, BUFLEN) < 0) {
+        if (read(fd, buf, BUFLEN) < 0) {
+            close(fd);
+            fprintf(stderr, "Failed to read /proc/cpuinfo!\n");
+            return 0;
+        }
         close(fd);
-        fprintf(stderr, "Failed to read /proc/cpuinfo!\n");
-        return 0;
+
+        buf_p = strstr(buf, "model name");
+        while (*buf_p != '@') {
+            buf_p++;
+        }
+
+        buf_p += 2;
+        memcpy(buf, buf_p, 12);
+        buf_p = buf;
+        while ((*buf_p >= '0') && (*buf_p <= '9')) {
+            buf_p++;
+        }
+        *buf_p = '\0';
+
+        freq = atoi(buf);
+
+        return freq * 1000 * 1000;
+    } else {
+        /*
+         * TCG has a default CP0 Timer period 10 ns, which is 100MHz,
+         * CPU frequency is defined as double of CP0 timer frequency.
+         */
+        return 200000000;
     }
-    close(fd);
-
-    buf_p = strstr(buf, "model name");
-    while (*buf_p != '@') {
-        buf_p++;
-    }
-
-    buf_p += 2;
-    memcpy(buf, buf_p, 12);
-    buf_p = buf;
-    while ((*buf_p >= '0') && (*buf_p <= '9')) {
-        buf_p++;
-    }
-    *buf_p = '\0';
-
-    freq = atoi(buf);
-
-    return freq * 1000 * 1000;
 }
 
 static struct efi_cpuinfo_loongson *init_cpu_info(void *g_cpuinfo_loongson)
